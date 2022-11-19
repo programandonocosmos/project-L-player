@@ -7,8 +7,8 @@ import random
 class VisibleState(typing.TypedDict):
     black_puzzles: typing.List[PuzzleData]
     white_puzzles: typing.List[PuzzleData]
-    black_puzzles_left: int
-    white_puzzles_left: int
+    black_puzzles_remaining: int
+    white_puzzles_remaining: int
     piece_quantity: typing.Dict[int, int]
     players_pieces: typing.Dict[typing.Tuple[int, int], int]
     players_points: typing.Dict[int, int]
@@ -32,8 +32,10 @@ class ProjectLGame:
         shuffled_white_puzzles: typing.List[Puzzle] = random.shuffle(white_puzzles)
         self.black_puzzles = shuffled_black_puzzles[:4]
         self.white_puzzles = shuffled_white_puzzles[:4]
-        self.black_puzzles_left = shuffled_black_puzzles[4 : self.black_puzzle_quantity]
-        self.white_puzzles_left = shuffled_white_puzzles[4:32]
+        self.black_puzzles_remaining = shuffled_black_puzzles[
+            4 : self.black_puzzle_quantity
+        ]
+        self.white_puzzles_remaining = shuffled_white_puzzles[4:32]
         self.players_pieces = {
             (player_num, piece): 1 if piece in [Piece.DOT, Piece.GREEN] else 0
             for piece in list(Piece)
@@ -53,8 +55,12 @@ class ProjectLGame:
         return {
             "black_puzzles": [p.extract_data() for p in self.black_puzzles],
             "white_puzzles": [p.extract_data() for p in self.white_puzzles],
-            "black_puzzles_left": [p.extract_data() for p in self.black_puzzles_left],
-            "white_puzzles_left": [p.extract_data() for p in self.white_puzzles_left],
+            "black_puzzles_remaining": [
+                p.extract_data() for p in self.black_puzzles_remaining
+            ],
+            "white_puzzles_remaining": [
+                p.extract_data() for p in self.white_puzzles_remaining
+            ],
             "piece_quantity": {p.value: q for p, q in self.piece_quantity.items()},
             "players_pieces": {
                 (pl, pi.value): q for (pl, pi), q in self.players_pieces.items()
