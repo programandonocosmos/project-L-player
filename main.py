@@ -55,12 +55,8 @@ class ProjectLGame:
         return {
             "black_puzzles": [p.extract_data() for p in self.black_puzzles],
             "white_puzzles": [p.extract_data() for p in self.white_puzzles],
-            "black_puzzles_remaining": [
-                p.extract_data() for p in self.black_puzzles_remaining
-            ],
-            "white_puzzles_remaining": [
-                p.extract_data() for p in self.white_puzzles_remaining
-            ],
+            "black_puzzles_remaining": len(self.black_puzzles_remaining),
+            "white_puzzles_remaining": len(self.white_puzzles_remaining),
             "piece_quantity": {p.value: q for p, q in self.piece_quantity.items()},
             "players_pieces": {
                 (pl, pi.value): q for (pl, pi), q in self.players_pieces.items()
