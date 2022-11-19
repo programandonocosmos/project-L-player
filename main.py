@@ -21,7 +21,6 @@ class VisibleState(typing.TypedDict):
 class ProjectLGame:
     def __init__(self, player_quantity: int = 2) -> None:
         self.player_quantity = player_quantity
-        self.black_puzzle_quantity = {2: 12, 3: 14, 4: 16}[player_quantity]
         self.reset()
 
     def reset(self):
@@ -32,9 +31,7 @@ class ProjectLGame:
         shuffled_white_puzzles: typing.List[Puzzle] = random.shuffle(white_puzzles)
         self.black_puzzles = shuffled_black_puzzles[:4]
         self.white_puzzles = shuffled_white_puzzles[:4]
-        self.black_puzzles_remaining = shuffled_black_puzzles[
-            4 : self.black_puzzle_quantity
-        ]
+        self.black_puzzles_remaining = shuffled_black_puzzles[4:20]
         self.white_puzzles_remaining = shuffled_white_puzzles[4:32]
         self.players_pieces = {
             (player_num, piece): 1 if piece in [Piece.DOT, Piece.GREEN] else 0
