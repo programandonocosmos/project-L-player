@@ -12,6 +12,7 @@ class VisibleState(typing.TypedDict):
     piece_quantity: typing.Dict[int, int]
     players_pieces: typing.Dict[typing.Tuple[int, int], int]
     players_points: typing.Dict[int, int]
+    players_puzzles: typing.Dict[int, typing.List[PuzzleData]]
     current_player: int
     remaining_actions: int
     did_master_action: bool
@@ -41,6 +42,9 @@ class ProjectLGame:
         self.players_points = {
             player_num: 0 for player_num in range(self.player_quantity)
         }
+        self.players_puzzles = {
+            player_num: [] for player_num in range(self.player_quantity)
+        }
         self.current_player: int = 0
         self.remaining_actions: int = 3
         self.did_master_action: bool = False
@@ -56,6 +60,10 @@ class ProjectLGame:
                 (pl, pi.value): q for (pl, pi), q in self.players_pieces.items()
             },
             "players_points": self.players_points,
+            "players_puzzles": {
+                p: [pu.extract_data() for pu in pus]
+                for p, pus in self.players_puzzles.items()
+            },
             "current_player": self.current_player,
             "remaining_actions": self.remaining_actions,
             "did_master_action": self.did_master_action,
