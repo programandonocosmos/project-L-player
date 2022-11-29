@@ -1,8 +1,7 @@
 from piece import Piece
 import typing
 
-Point = typing.Tuple[int, int]
-Row = typing.List[Point]
+Row = typing.List[int]
 Matrix = typing.List[Row]
 
 
