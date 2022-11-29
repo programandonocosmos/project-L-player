@@ -12,6 +12,7 @@ torch = "^1.13.0"
 gym = "0.17.3"
 tqdm = "^4.64.1"
 matplotlib = "^3.6.2"
+mypy = "^0.991"
 
 
 [tool.poetry.group.dev.dependencies]
