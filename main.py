@@ -6,8 +6,8 @@ from enum import Enum
 
 
 class VisibleState(typing.TypedDict):
-    black_puzzles: typing.List[PuzzleData]
-    white_puzzles: typing.List[PuzzleData]
+    black_puzzles: typing.List[typing.Optional[PuzzleData]]
+    white_puzzles: typing.List[typing.Optional[PuzzleData]]
     black_puzzles_remaining: int
     white_puzzles_remaining: int
     piece_quantity: typing.Dict[int, int]
@@ -74,8 +74,12 @@ class ProjectLGame:
         shuffled_white_puzzles = white_puzzles.copy()
         random.shuffle(shuffled_white_puzzles)
 
-        self.black_puzzles = shuffled_black_puzzles[:4]
-        self.white_puzzles = shuffled_white_puzzles[:4]
+        self.black_puzzles: typing.Sequence[
+            typing.Optional[Puzzle]
+        ] = shuffled_black_puzzles[:4]
+        self.white_puzzles: typing.Sequence[
+            typing.Optional[Puzzle]
+        ] = shuffled_white_puzzles[:4]
         self.black_puzzles_remaining = shuffled_black_puzzles[4:20]
         self.white_puzzles_remaining = shuffled_white_puzzles[4:32]
 
@@ -96,8 +100,12 @@ class ProjectLGame:
 
     def extract_state(self) -> VisibleState:
         return {
-            "black_puzzles": [p.extract_data() for p in self.black_puzzles],
-            "white_puzzles": [p.extract_data() for p in self.white_puzzles],
+            "black_puzzles": [
+                p.extract_data() if p is not None else None for p in self.black_puzzles
+            ],
+            "white_puzzles": [
+                p.extract_data() if p is not None else None for p in self.white_puzzles
+            ],
             "black_puzzles_remaining": len(self.black_puzzles_remaining),
             "white_puzzles_remaining": len(self.white_puzzles_remaining),
             "piece_quantity": {p.value: q for p, q in self.piece_quantity.items()},
@@ -114,14 +122,49 @@ class ProjectLGame:
             "did_master_action": self.did_master_action,
         }
 
+    def get_dot(self) -> None:
+
+        if self.piece_quantity[Piece.DOT] == 0:
+            raise ProjectLGame.InvalidAction("There are no more DOT pieces")
+
+        self.piece_quantity[Piece.DOT] -= 1
+        self.players_pieces[(self.current_player, Piece.DOT)] += 1
+
+    def upgrade_piece(self, action_data: UpgradePieceAction) -> None:
+
+        from_piece = Piece(action_data["from_piece"])
+        to_piece = Piece(action_data["to_piece"])
+
+        if self.players_pieces[(self.current_player, from_piece)] == 0:
+            raise ProjectLGame.InvalidAction(
+                "You cannot upgrade a piece that you doesn't have"
+            )
+
+        if self.piece_quantity[to_piece] == 0:
+            raise ProjectLGame.InvalidAction(
+                "You cannot upgrade a piece that are not in the game storage"
+            )
+
+        from_piece_size = piece_size[from_piece]
+        to_piece_size = piece_size[to_piece]
+
+        if from_piece_size != to_piece_size and from_piece_size + 1 != to_piece_size:
+            raise ProjectLGame.InvalidAction(
+                "You are not upgrading piece size correctly"
+            )
+
+        self.players_pieces[(self.current_player, from_piece)] -= 1
+        self.players_pieces[(self.current_player, to_piece)] += 1
+        self.piece_quantity[from_piece] += 1
+        self.piece_quantity[to_piece] -= 1
+
+    def get_puzzle(self, action_data: TakeAction) -> None:
+        pass
+
     def step(self, action: ActionData) -> typing.Tuple[VisibleState, int, bool]:
         if action["action"] == ActionEnum.GET_DOT.value:
 
-            if self.piece_quantity[Piece.DOT] == 0:
-                raise ProjectLGame.InvalidAction("There are no more DOT pieces")
-
-            self.piece_quantity[Piece.DOT] -= 1
-            self.players_pieces[(self.current_player, Piece.DOT)] += 1
+            self.get_dot()
 
         if action["action"] == ActionEnum.UPGRADE_PIECE.value:
 
@@ -138,42 +181,28 @@ class ProjectLGame:
                     "Missing from_piece or to_piece for UPGRADE_PIECE action"
                 )
 
-            action_data = typing.cast(UpgradePieceAction, action["action_data"])
+            self.upgrade_piece(typing.cast(UpgradePieceAction, action["action_data"]))
 
-            from_piece = Piece(action_data["from_piece"])
-            to_piece = Piece(action_data["to_piece"])
+        if action["action"] == ActionEnum.TAKE_PUZZLE.value:
 
-            if self.players_pieces[(self.current_player, from_piece)] == 0:
+            if action["action_data"] is None:
                 raise ProjectLGame.InvalidAction(
-                    "You cannot upgrade a piece that you doesn't have"
+                    "Missing action data for TAKE_PUZZLE action"
                 )
 
-            if self.piece_quantity[to_piece] == 0:
+            if action["action_data"].get("which_puzzle") is None:
                 raise ProjectLGame.InvalidAction(
-                    "You cannot upgrade a piece that are not in the game storage"
+                    "Missing which_puzzle for TAKE_PUZZLE action"
                 )
 
-            from_piece_size = piece_size[from_piece]
-            to_piece_size = piece_size[to_piece]
-
-            if (
-                from_piece_size != to_piece_size
-                and from_piece_size + 1 != to_piece_size
-            ):
-                raise ProjectLGame.InvalidAction(
-                    "You are not upgrading piece size correctly"
-                )
-
-            self.players_pieces[(self.current_player, from_piece)] -= 1
-            self.players_pieces[(self.current_player, to_piece)] += 1
-            self.piece_quantity[from_piece] += 1
-            self.piece_quantity[to_piece] -= 1
+            self.get_puzzle(typing.cast(TakeAction, action["action_data"]))
 
         else:
             raise ProjectLGame.InvalidAction(f"Invalid action: {action['action']}")
 
         self.remaining_actions -= 1
         if self.remaining_actions == 0:
+
             self.remaining_actions = 3
             self.did_master_action = False
             self.current_player += 1
