@@ -229,6 +229,14 @@ class ProjectLGame:
         else:
             raise ProjectLGame.InvalidAction(f"Invalid action: {action['action']}")
 
+        for i, puzzle in enumerate(self.black_puzzles):
+            if puzzle is None and len(self.black_puzzles_remaining) > 0:
+                self.black_puzzles[i] = self.black_puzzles_remaining.pop()
+
+        for i, puzzle in enumerate(self.white_puzzles):
+            if puzzle is None and len(self.white_puzzles_remaining) > 0:
+                self.white_puzzles[i] = self.white_puzzles_remaining.pop()
+
         self.remaining_actions -= 1
         if self.remaining_actions == 0:
 
