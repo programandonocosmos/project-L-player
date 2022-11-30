@@ -74,12 +74,12 @@ class ProjectLGame:
         shuffled_white_puzzles = white_puzzles.copy()
         random.shuffle(shuffled_white_puzzles)
 
-        self.black_puzzles: typing.Sequence[
-            typing.Optional[Puzzle]
-        ] = shuffled_black_puzzles[:4]
-        self.white_puzzles: typing.Sequence[
-            typing.Optional[Puzzle]
-        ] = shuffled_white_puzzles[:4]
+        self.black_puzzles = typing.cast(
+            typing.List[typing.Optional[Puzzle]], shuffled_black_puzzles[:4]
+        )
+        self.white_puzzles = typing.cast(
+            typing.List[typing.Optional[Puzzle]], shuffled_white_puzzles[:4]
+        )
         self.black_puzzles_remaining = shuffled_black_puzzles[4:20]
         self.white_puzzles_remaining = shuffled_white_puzzles[4:32]
 
@@ -159,7 +159,36 @@ class ProjectLGame:
         self.piece_quantity[to_piece] -= 1
 
     def get_puzzle(self, action_data: TakeAction) -> None:
-        pass
+
+        which_puzzle = action_data["which_puzzle"]
+        is_black = 0 <= which_puzzle and which_puzzle <= 3
+        is_white = 4 <= which_puzzle and which_puzzle <= 7
+        puzzle_pos = which_puzzle % 4
+
+        if is_black:
+            puzzle = self.black_puzzles[puzzle_pos]
+            if puzzle is None:
+                raise ProjectLGame.InvalidAction(
+                    "You cannot get a puzzle that doesn't exists"
+                )
+
+            self.players_puzzles[self.current_player].append(puzzle.copy())
+            self.black_puzzles[puzzle_pos] = None
+
+        if is_white:
+            puzzle = self.white_puzzles[puzzle_pos]
+            if puzzle is None:
+                raise ProjectLGame.InvalidAction(
+                    "You cannot get a puzzle that doesn't exists"
+                )
+
+            self.players_puzzles[self.current_player].append(puzzle.copy())
+            self.white_puzzles[puzzle_pos] = None
+
+        else:
+            raise ProjectLGame.InvalidAction(
+                "You cannot get a puzzle that doesn't exists"
+            )
 
     def step(self, action: ActionData) -> typing.Tuple[VisibleState, int, bool]:
         if action["action"] == ActionEnum.GET_DOT.value:

@@ -24,6 +24,13 @@ class Puzzle:
             "reward": self.reward.value,
         }
 
+    def copy(self) -> "Puzzle":
+        return Puzzle(
+            [row.copy() for row in self.matrix],
+            int(self.points),
+            Piece(self.reward.value),
+        )
+
 
 white_puzzles = [
     Puzzle(
