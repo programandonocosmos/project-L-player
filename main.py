@@ -185,7 +185,15 @@ class ProjectLGame:
                 if self.piece_quantity[puzzle.reward] > 0:
                     self.piece_quantity[puzzle.reward] -= 1
                     self.players_pieces[(self.current_player, puzzle.reward)] += 1
+                all_positions = [v for row in puzzle.matrix for v in row]
+                for piece in list(Piece):
+                    piece_quantity_f = all_positions.count(piece.value)/piece_size[piece]
+                    piece_quantity = int(piece_quantity_f)
+                    if piece_quantity_f != piece_quantity:
+                        raise ProjectLGame.InvalidAction(f"Some internal error appeared: {puzzle.matrix}")
+                    self.players_pieces[(self.current_player, piece)] += piece_quantity
                 self.players_puzzles[self.current_player].pop(i)
+
 
     def fill_table_with_puzzles(self) -> None:
         for i, puzzle in enumerate(self.black_puzzles):
@@ -334,6 +342,18 @@ class ProjectLGame:
             self.place_piece(ac)
 
     def step(self, action: ActionData) -> typing.Tuple[VisibleState, int, bool]:
+
+        if self.remaining_actions == 0:
+
+            self.remaining_actions = 3
+            self.did_master_action = False
+            self.current_player += 1
+
+            self.fill_table_with_puzzles()
+
+        if self.current_player == self.player_quantity:
+            self.current_player = 0
+
         if action["action"] == ActionEnum.GET_DOT.value:
             self.get_dot()
 
@@ -359,16 +379,6 @@ class ProjectLGame:
         self.remove_done_puzzles()
 
         self.remaining_actions -= 1
-        if self.remaining_actions == 0:
-
-            self.remaining_actions = 3
-            self.did_master_action = False
-            self.current_player += 1
-
-            self.fill_table_with_puzzles()
-
-        if self.current_player == self.player_quantity:
-            self.current_player = 0
 
         return self.extract_state(), self.players_points[self.current_player], True
 
