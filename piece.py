@@ -2,15 +2,15 @@ from enum import Enum
 
 
 class Piece(Enum):
-    DOT = 1
-    GREEN = 2
-    CORNER = 3
-    BLUE = 4
-    LSHAPE = 5
-    PURPLE = 6
-    TSHAPE = 7
-    RED = 8
-    LADDER = 9
+    DOT = 2
+    GREEN = 3
+    CORNER = 4
+    BLUE = 5
+    LSHAPE = 6
+    PURPLE = 7
+    TSHAPE = 8
+    RED = 9
+    LADDER = 10
 
 
 piece_size = {

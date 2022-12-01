@@ -38,7 +38,11 @@ class UpgradePieceAction(typing.TypedDict):
 
 class PlacePieceAction(typing.TypedDict):
     puzzle: int
-    new_matrix: Matrix
+    piece: int
+    x_coord: int
+    y_coord: int
+    rotation: int
+    reverted: bool
 
 
 class MasterAction(typing.TypedDict):
@@ -132,6 +136,12 @@ class ProjectLGame:
 
     def upgrade_piece(self, action_data: UpgradePieceAction) -> None:
 
+        if action_data["from_piece"] not in [p.value for p in list(Piece)]:
+            raise ProjectLGame.InvalidAction("Invalid piece number for from_piece")
+
+        if action_data["to_piece"] not in [p.value for p in list(Piece)]:
+            raise ProjectLGame.InvalidAction("Invalid piece number for to_piece")
+
         from_piece = Piece(action_data["from_piece"])
         to_piece = Piece(action_data["to_piece"])
 
@@ -159,6 +169,9 @@ class ProjectLGame:
         self.piece_quantity[to_piece] -= 1
 
     def get_puzzle(self, action_data: TakeAction) -> None:
+
+        if len(self.players_puzzles[self.current_player]) == 4:
+            raise ProjectLGame.InvalidAction("You can take only 4 puzzles")
 
         which_puzzle = action_data["which_puzzle"]
         is_black = 0 <= which_puzzle and which_puzzle <= 3
@@ -189,6 +202,464 @@ class ProjectLGame:
             raise ProjectLGame.InvalidAction(
                 "You cannot get a puzzle that doesn't exists"
             )
+
+    def place_piece(self, action_data: PlacePieceAction) -> None:
+
+        if action_data["puzzle"] >= len(self.players_puzzles[self.current_player]):
+            raise ProjectLGame.InvalidAction(
+                "You cannot place a piece in a puzzle that doesn't exists"
+            )
+
+        puzzle = self.players_puzzles[self.current_player][action_data["puzzle"]]
+
+        if action_data["piece"] not in [p.value for p in list(Piece)]:
+            raise ProjectLGame.InvalidAction("Invalid piece number for piece to place")
+
+        piece = Piece(action_data["piece"])
+
+        if self.players_pieces[(self.current_player, piece)] == 0:
+            raise ProjectLGame.InvalidAction(
+                "You cannot place a piece that is not yours"
+            )
+
+        if action_data["rotation"] not in [0, 1, 2, 3]:
+            raise ProjectLGame.InvalidAction("Invalid rotation for piece to place")
+
+        rotation = action_data["rotation"]
+        reversed = action_data["reverted"]
+        x_coord = action_data["x_coord"]
+        y_coord = action_data["y_coord"]
+
+        available_coords = [
+            (i, j)
+            for i, row in enumerate(puzzle.matrix)
+            for j, value in row
+            if value == 0
+        ]
+
+        necessary_coords = {
+            Piece.DOT: {
+                0: {False: [(x_coord, y_coord)], True: [(x_coord, y_coord)]},
+                1: {False: [(x_coord, y_coord)], True: [(x_coord, y_coord)]},
+                2: {False: [(x_coord, y_coord)], True: [(x_coord, y_coord)]},
+                3: {False: [(x_coord, y_coord)], True: [(x_coord, y_coord)]},
+            },
+            Piece.GREEN: {
+                0: {
+                    False: [(x_coord, y_coord), (x_coord, y_coord + 1)],
+                    True: [(x_coord, y_coord), (x_coord, y_coord + 1)],
+                },
+                1: {
+                    False: [(x_coord, y_coord), (x_coord - 1, y_coord)],
+                    True: [(x_coord, y_coord), (x_coord - 1, y_coord)],
+                },
+                2: {
+                    False: [(x_coord, y_coord), (x_coord, y_coord - 1)],
+                    True: [(x_coord, y_coord), (x_coord, y_coord - 1)],
+                },
+                3: {
+                    False: [(x_coord, y_coord), (x_coord + 1, y_coord)],
+                    True: [(x_coord, y_coord), (x_coord + 1, y_coord)],
+                },
+            },
+            Piece.BLUE: {
+                0: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 2, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 2, y_coord),
+                    ],
+                },
+                1: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                    ],
+                },
+                2: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 2, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 2, y_coord),
+                    ],
+                },
+                3: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                    ],
+                },
+            },
+            Piece.CORNER: {
+                0: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord - 1, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord - 1, y_coord),
+                    ],
+                },
+                1: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord, y_coord - 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord, y_coord - 1),
+                    ],
+                },
+                2: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord + 1, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord + 1, y_coord),
+                    ],
+                },
+                3: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord, y_coord + 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord, y_coord + 1),
+                    ],
+                },
+            },
+            Piece.TSHAPE: {
+                0: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 1, y_coord + 1),
+                        (x_coord + 2, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 1, y_coord + 1),
+                        (x_coord + 2, y_coord),
+                    ],
+                },
+                1: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord - 1, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord - 1, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                    ],
+                },
+                2: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 1, y_coord - 1),
+                        (x_coord - 2, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 1, y_coord - 1),
+                        (x_coord - 2, y_coord),
+                    ],
+                },
+                3: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord + 1, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord + 1, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                    ],
+                },
+            },
+            Piece.PURPLE: {
+                0: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 2, y_coord),
+                        (x_coord + 3, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 2, y_coord),
+                        (x_coord + 3, y_coord),
+                    ],
+                },
+                1: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                        (x_coord, y_coord + 3),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                        (x_coord, y_coord + 3),
+                    ],
+                },
+                2: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 2, y_coord),
+                        (x_coord - 3, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 2, y_coord),
+                        (x_coord - 3, y_coord),
+                    ],
+                },
+                3: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                        (x_coord, y_coord - 3),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                        (x_coord, y_coord - 3),
+                    ],
+                },
+            },
+            Piece.RED: {
+                0: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 1, y_coord + 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 1, y_coord + 1),
+                    ],
+                },
+                1: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord - 1, y_coord - 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord - 1, y_coord - 1),
+                    ],
+                },
+                2: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 1, y_coord - 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 1, y_coord - 1),
+                    ],
+                },
+                3: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord + 1, y_coord + 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord + 1, y_coord + 1),
+                    ],
+                },
+            },
+            Piece.LSHAPE: {
+                0: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                        (x_coord + 1, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord, y_coord + 2),
+                        (x_coord - 1, y_coord),
+                    ],
+                },
+                1: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 2, y_coord),
+                        (x_coord, y_coord + 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 2, y_coord),
+                        (x_coord, y_coord - 1),
+                    ],
+                },
+                2: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                        (x_coord - 1, y_coord),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord, y_coord - 2),
+                        (x_coord + 1, y_coord),
+                    ],
+                },
+                3: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 2, y_coord),
+                        (x_coord, y_coord - 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 2, y_coord),
+                        (x_coord, y_coord + 1),
+                    ],
+                },
+            },
+            Piece.LADDER: {
+                0: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord + 1, y_coord + 1),
+                        (x_coord + 1, y_coord + 2),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord + 1),
+                        (x_coord - 1, y_coord + 1),
+                        (x_coord - 1, y_coord + 2),
+                    ],
+                },
+                1: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 1, y_coord + 1),
+                        (x_coord - 2, y_coord + 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord - 1, y_coord),
+                        (x_coord - 1, y_coord - 1),
+                        (x_coord - 2, y_coord - 1),
+                    ],
+                },
+                2: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord - 1, y_coord - 1),
+                        (x_coord - 1, y_coord - 2),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord, y_coord - 1),
+                        (x_coord + 1, y_coord - 1),
+                        (x_coord + 1, y_coord - 2),
+                    ],
+                },
+                3: {
+                    False: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 1, y_coord - 1),
+                        (x_coord + 2, y_coord - 1),
+                    ],
+                    True: [
+                        (x_coord, y_coord),
+                        (x_coord + 1, y_coord),
+                        (x_coord + 1, y_coord + 1),
+                        (x_coord + 2, y_coord + 1),
+                    ],
+                },
+            },
+        }[piece][rotation][reversed]
+
+        if not all(coord in available_coords for coord in necessary_coords):
+            raise ProjectLGame.InvalidAction("Cannot place a piece in a filled space")
+
+        self.players_pieces[(self.current_player, piece)] -= 1
+        for x, y in necessary_coords:
+            puzzle.matrix[x][y] = piece.value
 
     def step(self, action: ActionData) -> typing.Tuple[VisibleState, int, bool]:
         if action["action"] == ActionEnum.GET_DOT.value:
@@ -225,6 +696,27 @@ class ProjectLGame:
                 )
 
             self.get_puzzle(typing.cast(TakeAction, action["action_data"]))
+
+        if action["action"] == ActionEnum.PLACE_PIECE.value:
+
+            if action["action_data"] is None:
+                raise ProjectLGame.InvalidAction(
+                    "Missing action data for PLACE_PIECE action"
+                )
+
+            if (
+                action["action_data"].get("puzzle") is None
+                or action["action_data"].get("piece") is None
+                or action["action_data"].get("x_coord") is None
+                or action["action_data"].get("y_coord") is None
+                or action["action_data"].get("rotation") is None
+                or action["action_data"].get("reverted") is None
+            ):
+                raise ProjectLGame.InvalidAction(
+                    "Missing a field for PLACE_PIECE action"
+                )
+
+            self.place_piece(typing.cast(PlacePieceAction, action["action_data"]))
 
         else:
             raise ProjectLGame.InvalidAction(f"Invalid action: {action['action']}")
