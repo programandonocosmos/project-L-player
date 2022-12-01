@@ -13,6 +13,7 @@ gym = "0.17.3"
 tqdm = "^4.64.1"
 matplotlib = "^3.6.2"
 mypy = "^0.991"
+pydantic = "^1.10.2"
 
 
 [tool.poetry.group.dev.dependencies]

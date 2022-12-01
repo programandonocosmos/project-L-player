@@ -14,6 +14,13 @@ class Piece(Enum):
     LADDER = 10
 
 
+class Rotation(Enum):
+    UP = 0
+    LEFT = 1
+    DOWN = 2
+    RIGHT = 3
+
+
 piece_size = {
     Piece.DOT: 1,
     Piece.GREEN: 2,
@@ -29,35 +36,35 @@ piece_size = {
 Point = typing.Tuple[int, int]
 Points = typing.List[Point]
 OrientationToPoints = typing.Dict[bool, Points]
-RotationAndOrientationToPoints = typing.Dict[int, OrientationToPoints]
+RotationAndOrientationToPoints = typing.Dict[Rotation, OrientationToPoints]
 
 piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
     Piece.DOT: {
-        0: {False: [(0, 0)], True: [(0, 0)]},
-        1: {False: [(0, 0)], True: [(0, 0)]},
-        2: {False: [(0, 0)], True: [(0, 0)]},
-        3: {False: [(0, 0)], True: [(0, 0)]},
+        Rotation.UP: {False: [(0, 0)], True: [(0, 0)]},
+        Rotation.LEFT: {False: [(0, 0)], True: [(0, 0)]},
+        Rotation.DOWN: {False: [(0, 0)], True: [(0, 0)]},
+        Rotation.RIGHT: {False: [(0, 0)], True: [(0, 0)]},
     },
     Piece.GREEN: {
-        0: {
+        Rotation.UP: {
             False: [(0, 0), (0, 1)],
             True: [(0, 0), (0, 1)],
         },
-        1: {
+        Rotation.LEFT: {
             False: [(0, 0), (-1, 0)],
             True: [(0, 0), (-1, 0)],
         },
-        2: {
+        Rotation.DOWN: {
             False: [(0, 0), (0, -1)],
             True: [(0, 0), (0, -1)],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [(0, 0), (1, 0)],
             True: [(0, 0), (1, 0)],
         },
     },
     Piece.BLUE: {
-        0: {
+        Rotation.UP: {
             False: [
                 (0, 0),
                 (1, 0),
@@ -69,7 +76,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (2, 0),
             ],
         },
-        1: {
+        Rotation.LEFT: {
             False: [
                 (0, 0),
                 (0, 1),
@@ -81,7 +88,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (0, 2),
             ],
         },
-        2: {
+        Rotation.DOWN: {
             False: [
                 (0, 0),
                 (-1, 0),
@@ -93,7 +100,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-2, 0),
             ],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [
                 (0, 0),
                 (0, -1),
@@ -107,7 +114,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         },
     },
     Piece.CORNER: {
-        0: {
+        Rotation.UP: {
             False: [
                 (0, 0),
                 (0, 1),
@@ -119,7 +126,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-1, 0),
             ],
         },
-        1: {
+        Rotation.LEFT: {
             False: [
                 (0, 0),
                 (-1, 0),
@@ -131,7 +138,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (0, -1),
             ],
         },
-        2: {
+        Rotation.DOWN: {
             False: [
                 (0, 0),
                 (0, -1),
@@ -143,7 +150,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (1, 0),
             ],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [
                 (0, 0),
                 (1, 0),
@@ -157,7 +164,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         },
     },
     Piece.TSHAPE: {
-        0: {
+        Rotation.UP: {
             False: [
                 (0, 0),
                 (1, 0),
@@ -171,7 +178,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (2, 0),
             ],
         },
-        1: {
+        Rotation.LEFT: {
             False: [
                 (0, 0),
                 (0, 1),
@@ -185,7 +192,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (0, 2),
             ],
         },
-        2: {
+        Rotation.DOWN: {
             False: [
                 (0, 0),
                 (-1, 0),
@@ -199,7 +206,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-2, 0),
             ],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [
                 (0, 0),
                 (0, -1),
@@ -215,7 +222,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         },
     },
     Piece.PURPLE: {
-        0: {
+        Rotation.UP: {
             False: [
                 (0, 0),
                 (1, 0),
@@ -229,7 +236,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (3, 0),
             ],
         },
-        1: {
+        Rotation.LEFT: {
             False: [
                 (0, 0),
                 (0, 1),
@@ -243,7 +250,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (0, 3),
             ],
         },
-        2: {
+        Rotation.DOWN: {
             False: [
                 (0, 0),
                 (-1, 0),
@@ -257,7 +264,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-3, 0),
             ],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [
                 (0, 0),
                 (0, -1),
@@ -273,7 +280,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         },
     },
     Piece.RED: {
-        0: {
+        Rotation.UP: {
             False: [
                 (0, 0),
                 (0, 1),
@@ -287,7 +294,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-1, 1),
             ],
         },
-        1: {
+        Rotation.LEFT: {
             False: [
                 (0, 0),
                 (-1, 0),
@@ -301,7 +308,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-1, -1),
             ],
         },
-        2: {
+        Rotation.DOWN: {
             False: [
                 (0, 0),
                 (0, -1),
@@ -315,7 +322,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (1, -1),
             ],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [
                 (0, 0),
                 (1, 0),
@@ -331,7 +338,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         },
     },
     Piece.LSHAPE: {
-        0: {
+        Rotation.UP: {
             False: [
                 (0, 0),
                 (0, 1),
@@ -345,7 +352,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-1, 0),
             ],
         },
-        1: {
+        Rotation.LEFT: {
             False: [
                 (0, 0),
                 (-1, 0),
@@ -359,7 +366,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (0, -1),
             ],
         },
-        2: {
+        Rotation.DOWN: {
             False: [
                 (0, 0),
                 (0, -1),
@@ -373,7 +380,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (1, 0),
             ],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [
                 (0, 0),
                 (1, 0),
@@ -389,7 +396,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         },
     },
     Piece.LADDER: {
-        0: {
+        Rotation.UP: {
             False: [
                 (0, 0),
                 (0, 1),
@@ -403,7 +410,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-1, 2),
             ],
         },
-        1: {
+        Rotation.LEFT: {
             False: [
                 (0, 0),
                 (-1, 0),
@@ -417,7 +424,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (-2, -1),
             ],
         },
-        2: {
+        Rotation.DOWN: {
             False: [
                 (0, 0),
                 (0, -1),
@@ -431,7 +438,7 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
                 (1, -2),
             ],
         },
-        3: {
+        Rotation.RIGHT: {
             False: [
                 (0, 0),
                 (1, 0),
