@@ -20,6 +20,7 @@ class VisibleState(typing.TypedDict):
     current_player: int
     remaining_actions: int
     did_master_action: bool
+    remaining_rounds: typing.Optional[int]
 
 
 class ActionData(typing.TypedDict):
@@ -153,6 +154,7 @@ class ProjectLGame:
         self.current_player: int = 0
         self.remaining_actions: int = 3
         self.did_master_action: bool = False
+        self.remaining_rounds: typing.Optional[int] = None
 
     def extract_state(self) -> VisibleState:
         return {
@@ -176,6 +178,7 @@ class ProjectLGame:
             "current_player": self.current_player,
             "remaining_actions": self.remaining_actions,
             "did_master_action": self.did_master_action,
+            "remaining_rounds": self.remaining_rounds,
         }
 
     def remove_done_puzzles(self) -> None:
@@ -187,13 +190,16 @@ class ProjectLGame:
                     self.players_pieces[(self.current_player, puzzle.reward)] += 1
                 all_positions = [v for row in puzzle.matrix for v in row]
                 for piece in list(Piece):
-                    piece_quantity_f = all_positions.count(piece.value)/piece_size[piece]
+                    piece_quantity_f = (
+                        all_positions.count(piece.value) / piece_size[piece]
+                    )
                     piece_quantity = int(piece_quantity_f)
                     if piece_quantity_f != piece_quantity:
-                        raise ProjectLGame.InvalidAction(f"Some internal error appeared: {puzzle.matrix}")
+                        raise ProjectLGame.InvalidAction(
+                            f"Some internal error appeared: {puzzle.matrix}"
+                        )
                     self.players_pieces[(self.current_player, piece)] += piece_quantity
                 self.players_puzzles[self.current_player].pop(i)
-
 
     def fill_table_with_puzzles(self) -> None:
         for i, puzzle in enumerate(self.black_puzzles):
@@ -343,6 +349,9 @@ class ProjectLGame:
 
     def step(self, action: ActionData) -> typing.Tuple[VisibleState, int, bool]:
 
+        if self.remaining_rounds == 0:
+            raise ProjectLGame.InvalidAction("The game ended")
+
         if self.remaining_actions == 0:
 
             self.remaining_actions = 3
@@ -379,6 +388,15 @@ class ProjectLGame:
         self.remove_done_puzzles()
 
         self.remaining_actions -= 1
+
+        if len(self.black_puzzles_remaining) == 0:
+            if self.remaining_rounds is None:
+                self.remaining_rounds = 2
+            elif self.current_player == 0:
+                self.remaining_rounds -= 1
+
+        if self.remaining_rounds == 0:
+            return self.extract_state(), self.players_points[self.current_player], False
 
         return self.extract_state(), self.players_points[self.current_player], True
 
