@@ -46,7 +46,7 @@ class PlacePieceAction(typing.TypedDict):
 
 
 class MasterAction(typing.TypedDict):
-    new_matrices: typing.List[Matrix]
+    place_piece_actions: typing.List[PlacePieceAction]
 
 
 class ActionData(typing.TypedDict):
@@ -203,7 +203,7 @@ class ProjectLGame:
                 "You cannot get a puzzle that doesn't exists"
             )
 
-    def place_piece(self, action_data: PlacePieceAction) -> None:
+    def place_piece(self, action_data: PlacePieceAction, only_try=False) -> None:
 
         if action_data["puzzle"] >= len(self.players_puzzles[self.current_player]):
             raise ProjectLGame.InvalidAction(
@@ -233,7 +233,7 @@ class ProjectLGame:
         available_coords = [
             (i, j)
             for i, row in enumerate(puzzle.matrix)
-            for j, value in row
+            for j, value in enumerate(row)
             if value == 0
         ]
 
@@ -243,16 +243,59 @@ class ProjectLGame:
         if not all(coord in available_coords for coord in necessary_coords):
             raise ProjectLGame.InvalidAction("Cannot place a piece in a filled space")
 
-        self.players_pieces[(self.current_player, piece)] -= 1
-        for x, y in necessary_coords:
-            puzzle.matrix[x][y] = piece.value
+        if not only_try:
+            self.players_pieces[(self.current_player, piece)] -= 1
+            for x, y in necessary_coords:
+                puzzle.matrix[x][y] = piece.value
+
+    def master_play(self, action_data: MasterAction) -> None:
+
+        for ac in action_data["place_piece_actions"]:
+            if (
+                ac.get("puzzle") is None
+                or ac.get("piece") is None
+                or ac.get("x_coord") is None
+                or ac.get("y_coord") is None
+                or ac.get("rotation") is None
+                or ac.get("reverted") is None
+            ):
+                raise ProjectLGame.InvalidAction(
+                    "Missing a field for some play for MASTER action"
+                )
+
+        puzzles = [ac["puzzle"] for ac in action_data["place_piece_actions"]]
+        pieces = [ac["piece"] for ac in action_data["place_piece_actions"]]
+        remaining_pieces = [
+            self.players_pieces[(self.current_player, p)] - pieces.count(p)
+            for p in list(Piece)
+        ]
+        if any(r < 0 for r in remaining_pieces):
+            raise ProjectLGame.InvalidAction(
+                "Using more pieces then you have for MASTER action"
+            )
+
+        if len(puzzles) != len(set(puzzles)):
+            raise ProjectLGame.InvalidAction("Repeated puzzle for MASTER action")
+
+        if set(puzzles) != set(self.players_puzzles[self.current_player]):
+            raise ProjectLGame.InvalidAction("Missing puzzle for MASTER action")
+
+        for ac in action_data["place_piece_actions"]:
+            try:
+                self.place_piece(ac, only_try=True)
+            except ProjectLGame.InvalidAction as e:
+                raise ProjectLGame.InvalidAction(f"{e} for MASTER action")
+
+        self.did_master_action = True
+        for ac in action_data["place_piece_actions"]:
+            self.place_piece(ac)
 
     def step(self, action: ActionData) -> typing.Tuple[VisibleState, int, bool]:
         if action["action"] == ActionEnum.GET_DOT.value:
 
             self.get_dot()
 
-        if action["action"] == ActionEnum.UPGRADE_PIECE.value:
+        elif action["action"] == ActionEnum.UPGRADE_PIECE.value:
 
             if action["action_data"] is None:
                 raise ProjectLGame.InvalidAction(
@@ -269,7 +312,7 @@ class ProjectLGame:
 
             self.upgrade_piece(typing.cast(UpgradePieceAction, action["action_data"]))
 
-        if action["action"] == ActionEnum.TAKE_PUZZLE.value:
+        elif action["action"] == ActionEnum.TAKE_PUZZLE.value:
 
             if action["action_data"] is None:
                 raise ProjectLGame.InvalidAction(
@@ -283,7 +326,7 @@ class ProjectLGame:
 
             self.get_puzzle(typing.cast(TakeAction, action["action_data"]))
 
-        if action["action"] == ActionEnum.PLACE_PIECE.value:
+        elif action["action"] == ActionEnum.PLACE_PIECE.value:
 
             if action["action_data"] is None:
                 raise ProjectLGame.InvalidAction(
@@ -303,6 +346,20 @@ class ProjectLGame:
                 )
 
             self.place_piece(typing.cast(PlacePieceAction, action["action_data"]))
+
+        elif action["action"] == ActionEnum.MASTER.value:
+
+            if action["action_data"] is None:
+                raise ProjectLGame.InvalidAction(
+                    "Missing action data for MASTER action"
+                )
+
+            if action["action_data"].get("place_piece_actions") is None:
+                raise ProjectLGame.InvalidAction(
+                    "Missing place_piece_actions for MASTER action"
+                )
+
+            self.master_play(typing.cast(MasterAction, action["action_data"]))
 
         else:
             raise ProjectLGame.InvalidAction(f"Invalid action: {action['action']}")
