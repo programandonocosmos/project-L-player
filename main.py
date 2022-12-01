@@ -21,6 +21,7 @@ class VisibleState(typing.TypedDict):
     remaining_actions: int
     did_master_action: bool
     remaining_rounds: typing.Optional[int]
+    points_to_pay: int
 
 
 class ActionData(typing.TypedDict):
@@ -37,6 +38,7 @@ class ActionEnum(Enum):
     UPGRADE_PIECE = 3
     PLACE_PIECE = 4
     MASTER = 5
+    STOP = 6
 
 
 class CustomModel(BaseModel):
@@ -155,6 +157,7 @@ class ProjectLGame:
         self.remaining_actions: int = 3
         self.did_master_action: bool = False
         self.remaining_rounds: typing.Optional[int] = None
+        self.points_to_pay: int = 0
 
     def extract_state(self) -> VisibleState:
         return {
@@ -179,6 +182,7 @@ class ProjectLGame:
             "remaining_actions": self.remaining_actions,
             "did_master_action": self.did_master_action,
             "remaining_rounds": self.remaining_rounds,
+            "points_to_pay": self.points_to_pay,
         }
 
     def remove_done_puzzles(self) -> None:
@@ -348,9 +352,8 @@ class ProjectLGame:
             self.place_piece(ac)
 
     def step(self, action: ActionData) -> typing.Tuple[VisibleState, int, bool]:
-
-        if self.remaining_rounds == 0:
-            raise ProjectLGame.InvalidAction("The game ended")
+        if self.remaining_rounds == -1:
+            return self.extract_state(), self.players_points[self.current_player], False
 
         if self.remaining_actions == 0:
 
@@ -360,34 +363,47 @@ class ProjectLGame:
 
             self.fill_table_with_puzzles()
 
-        if self.current_player == self.player_quantity:
-            self.current_player = 0
+        if self.remaining_rounds == 0:
 
-        if action["action"] == ActionEnum.GET_DOT.value:
-            self.get_dot()
+            if action["action"] == ActionEnum.PLACE_PIECE.value:
+                place_data = PlacePieceAction(**action["action_data"])
+                self.place_piece(place_data)
+                self.points_to_pay += 1
 
-        elif action["action"] == ActionEnum.UPGRADE_PIECE.value:
-            upgrade_data = UpgradePieceAction(**action["action_data"])
-            self.upgrade_piece(upgrade_data)
-
-        elif action["action"] == ActionEnum.TAKE_PUZZLE.value:
-            take_data = TakeAction(**action["action_data"])
-            self.get_puzzle(take_data)
-
-        elif action["action"] == ActionEnum.PLACE_PIECE.value:
-            place_data = PlacePieceAction(**action["action_data"])
-            self.place_piece(place_data)
-
-        elif action["action"] == ActionEnum.MASTER.value:
-            master_data = MasterAction(**action["action_data"])
-            self.master_play(master_data)
+            elif action["action"] == ActionEnum.STOP.value:
+                self.players_points[self.current_player] -= self.points_to_pay
+                self.remaining_actions = 0
 
         else:
-            raise ProjectLGame.InvalidAction(f"Invalid action: {action['action']}")
+
+            if self.current_player == self.player_quantity:
+                self.current_player = 0
+
+            if action["action"] == ActionEnum.GET_DOT.value:
+                self.get_dot()
+
+            elif action["action"] == ActionEnum.UPGRADE_PIECE.value:
+                upgrade_data = UpgradePieceAction(**action["action_data"])
+                self.upgrade_piece(upgrade_data)
+
+            elif action["action"] == ActionEnum.TAKE_PUZZLE.value:
+                take_data = TakeAction(**action["action_data"])
+                self.get_puzzle(take_data)
+
+            elif action["action"] == ActionEnum.PLACE_PIECE.value:
+                place_data = PlacePieceAction(**action["action_data"])
+                self.place_piece(place_data)
+
+            elif action["action"] == ActionEnum.MASTER.value:
+                master_data = MasterAction(**action["action_data"])
+                self.master_play(master_data)
+
+            else:
+                raise ProjectLGame.InvalidAction(f"Invalid action: {action['action']}")
+
+            self.remaining_actions -= 1
 
         self.remove_done_puzzles()
-
-        self.remaining_actions -= 1
 
         if len(self.black_puzzles_remaining) == 0:
             if self.remaining_rounds is None:
@@ -395,7 +411,7 @@ class ProjectLGame:
             elif self.current_player == 0:
                 self.remaining_rounds -= 1
 
-        if self.remaining_rounds == 0:
+        if self.remaining_rounds == -1:
             return self.extract_state(), self.players_points[self.current_player], False
 
         return self.extract_state(), self.players_points[self.current_player], True
