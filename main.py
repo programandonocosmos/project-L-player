@@ -178,6 +178,24 @@ class ProjectLGame:
             "did_master_action": self.did_master_action,
         }
 
+    def remove_done_puzzles(self) -> None:
+        for i, puzzle in enumerate(self.players_puzzles[self.current_player]):
+            if all(v != 0 for row in puzzle.matrix for v in row):
+                self.players_points[self.current_player] += puzzle.points
+                if self.piece_quantity[puzzle.reward] > 0:
+                    self.piece_quantity[puzzle.reward] -= 1
+                    self.players_pieces[(self.current_player, puzzle.reward)] += 1
+                self.players_puzzles[self.current_player].pop(i)
+
+    def fill_table_with_puzzles(self) -> None:
+        for i, puzzle in enumerate(self.black_puzzles):
+            if puzzle is None and len(self.black_puzzles_remaining) > 0:
+                self.black_puzzles[i] = self.black_puzzles_remaining.pop()
+
+        for i, puzzle in enumerate(self.white_puzzles):
+            if puzzle is None and len(self.white_puzzles_remaining) > 0:
+                self.white_puzzles[i] = self.white_puzzles_remaining.pop()
+
     def get_dot(self) -> None:
 
         if self.piece_quantity[Piece.DOT] == 0:
@@ -338,13 +356,7 @@ class ProjectLGame:
         else:
             raise ProjectLGame.InvalidAction(f"Invalid action: {action['action']}")
 
-        for i, puzzle in enumerate(self.black_puzzles):
-            if puzzle is None and len(self.black_puzzles_remaining) > 0:
-                self.black_puzzles[i] = self.black_puzzles_remaining.pop()
-
-        for i, puzzle in enumerate(self.white_puzzles):
-            if puzzle is None and len(self.white_puzzles_remaining) > 0:
-                self.white_puzzles[i] = self.white_puzzles_remaining.pop()
+        self.remove_done_puzzles()
 
         self.remaining_actions -= 1
         if self.remaining_actions == 0:
@@ -352,6 +364,9 @@ class ProjectLGame:
             self.remaining_actions = 3
             self.did_master_action = False
             self.current_player += 1
+
+            self.fill_table_with_puzzles()
+
         if self.current_player == self.player_quantity:
             self.current_player = 0
 
