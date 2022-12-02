@@ -31,6 +31,34 @@ class Puzzle:
             Piece(self.reward.value),
         )
 
+    def __repr__(self) -> str:
+
+        matrix_repr = ""
+        for i in range(4, -1, -1):
+            for j in range(5):
+                matrix_repr += str(self.matrix[j][i])
+            matrix_repr += "\n"
+
+        return (
+            f"points: {self.points}\n"
+            f"reward: {self.reward.name}\n"
+            "matrix: \n"
+            f"{matrix_repr}"
+        )
+
+
+def print_puzzles(puzzles: typing.Sequence[typing.Optional[Puzzle]]) -> None:
+    result = ["", "", "", "", "", "", "", "", ""]
+    for puzzle in puzzles:
+        if puzzle is None:
+            for i in range(len(result)):
+                result[i] += "|   None   "
+        else:
+            max_len = max(len(line) for line in str(puzzle).split("\n"))
+            for i, line in enumerate(str(puzzle).split("\n")):
+                result[i] += line + " " * (2 + max_len - len(line))
+    print("\n".join(result))
+
 
 white_puzzles = [
     Puzzle(
