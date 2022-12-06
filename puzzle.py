@@ -33,17 +33,23 @@ class Puzzle:
 
     def __repr__(self) -> str:
 
-        matrix_repr = ""
-        for i in range(4, -1, -1):
-            for j in range(5):
-                matrix_repr += str(self.matrix[j][i])
-            matrix_repr += "\n"
+        matrix_repr = ["", "", "", "", ""]
+        for j in range(5):
+            max_len = max(len(str(self.matrix[j][i])) for i in range(4, -1, -1))
+            for i in range(4, -1, -1):
+                matrix_repr[i] += (
+                    " "
+                    + str(self.matrix[j][i])
+                    + " " * (max_len - len(str(self.matrix[j][i])))
+                )
+
+        matrix_repr_lst = "\n".join(matrix_repr)
 
         return (
             f"points: {self.points}\n"
             f"reward: {self.reward.name}\n"
             "matrix: \n"
-            f"{matrix_repr}"
+            f"{matrix_repr_lst}"
         )
 
 
