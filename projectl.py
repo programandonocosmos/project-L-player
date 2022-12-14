@@ -186,6 +186,7 @@ class ProjectLGame:
         }
 
     def remove_done_puzzles(self) -> None:
+        puzzles_to_remove = []
         for i, puzzle in enumerate(self.players_puzzles[self.current_player]):
             if all(v != 0 for row in puzzle.matrix for v in row):
                 self.players_points[self.current_player] += puzzle.points
@@ -203,7 +204,12 @@ class ProjectLGame:
                             f"Some internal error appeared: {puzzle.matrix}"
                         )
                     self.players_pieces[(self.current_player, piece)] += piece_quantity
-                self.players_puzzles[self.current_player].pop(i)
+                puzzles_to_remove.append(i)
+        self.players_puzzles[self.current_player] = [
+            p
+            for p in self.players_puzzles[self.current_player]
+            if p not in puzzles_to_remove
+        ]
 
     def fill_table_with_puzzles(self) -> None:
         for i, puzzle in enumerate(self.black_puzzles):
@@ -342,7 +348,7 @@ class ProjectLGame:
         if len(puzzles) != len(set(puzzles)):
             raise ProjectLGame.InvalidAction("Repeated puzzle for MASTER action")
 
-        if set(puzzles) != set(self.players_puzzles[self.current_player]):
+        if set(puzzles) != set(range(len(self.players_puzzles[self.current_player]))):
             raise ProjectLGame.InvalidAction("Missing puzzle for MASTER action")
 
         for ac in action_data.place_piece_actions:
