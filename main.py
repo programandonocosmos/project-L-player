@@ -36,6 +36,8 @@ while True:
             )
         elif action_number == ActionEnum.PLACE_PIECE.value:
             puzzle_number = int(input("puzzle number: "))
+            for piece in list(Piece):
+                print(f"- {piece.value}) {piece.name}")
             piece_number = int(input("piece number: "))
             x_coord = int(input("x position: "))
             y_coord = int(input("y position: "))
@@ -61,6 +63,8 @@ while True:
         elif action_number == ActionEnum.MASTER.value:
             actions = []
             for puzzle_number in range(len(game.players_puzzles[game.current_player])):
+                for piece in list(Piece):
+                    print(f"- {piece.value}) {piece.name}")
                 piece_number = int(input("piece number: "))
                 x_coord = int(input("x position: "))
                 y_coord = int(input("y position: "))
