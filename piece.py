@@ -1,5 +1,6 @@
 from enum import Enum
 import typing
+from sty import bg
 
 
 class Piece(Enum):
@@ -31,6 +32,20 @@ piece_size = {
     Piece.TSHAPE: 4,
     Piece.PURPLE: 4,
     Piece.RED: 4,
+}
+
+piece_color = {
+    0: bg.white + "  " + bg.rs,
+    1: bg.black + "  " + bg.rs,
+    Piece.DOT.value: bg.yellow + "  " + bg.rs,
+    Piece.GREEN.value: bg.green + "  " + bg.rs,
+    Piece.CORNER.value: bg(255, 170, 50) + "  " + bg.rs,
+    Piece.BLUE.value: bg.blue + "  " + bg.rs,
+    Piece.LSHAPE.value: bg.cyan + "  " + bg.rs,
+    Piece.LADDER.value: bg(255, 110, 50) + "  " + bg.rs,
+    Piece.TSHAPE.value: bg(255, 0, 250) + "  " + bg.rs,
+    Piece.PURPLE.value: bg(117, 85, 171) + "  " + bg.rs,
+    Piece.RED.value: bg.red + "  " + bg.rs,
 }
 
 Point = typing.Tuple[int, int]
