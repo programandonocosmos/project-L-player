@@ -82,13 +82,13 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         Rotation.UP: {
             False: [
                 (0, 0),
-                (0, 1),
-                (0, 2),
+                (0, -1),
+                (0, -2),
             ],
             True: [
                 (0, 0),
-                (0, 1),
-                (0, 2),
+                (0, -1),
+                (0, -2),
             ],
         },
         Rotation.LEFT: {
@@ -106,13 +106,13 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         Rotation.DOWN: {
             False: [
                 (0, 0),
-                (0, -1),
-                (0, -2),
+                (0, 1),
+                (0, 2),
             ],
             True: [
                 (0, 0),
-                (0, -1),
-                (0, -2),
+                (0, 1),
+                (0, 2),
             ],
         },
         Rotation.RIGHT: {
@@ -240,57 +240,57 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         Rotation.UP: {
             False: [
                 (0, 0),
-                (1, 0),
-                (2, 0),
-                (3, 0),
+                (0, -1),
+                (0, -2),
+                (0, -3),
             ],
             True: [
                 (0, 0),
-                (1, 0),
-                (2, 0),
-                (3, 0),
+                (0, -1),
+                (0, -2),
+                (0, -3),
             ],
         },
         Rotation.LEFT: {
             False: [
                 (0, 0),
-                (0, 1),
-                (0, 2),
-                (0, 3),
+                (-1, 0),
+                (-2, 0),
+                (-3, 0),
             ],
             True: [
                 (0, 0),
-                (0, 1),
-                (0, 2),
-                (0, 3),
+                (-1, 0),
+                (-2, 0),
+                (-3, 0),
             ],
         },
         Rotation.DOWN: {
             False: [
                 (0, 0),
-                (-1, 0),
-                (-2, 0),
-                (-3, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
             ],
             True: [
                 (0, 0),
-                (-1, 0),
-                (-2, 0),
-                (-3, 0),
+                (0, 1),
+                (0, 2),
+                (0, 3),
             ],
         },
         Rotation.RIGHT: {
             False: [
                 (0, 0),
-                (0, -1),
-                (0, -2),
-                (0, -3),
+                (1, 0),
+                (2, 0),
+                (3, 0),
             ],
             True: [
                 (0, 0),
-                (0, -1),
-                (0, -2),
-                (0, -3),
+                (1, 0),
+                (2, 0),
+                (3, 0),
             ],
         },
     },
