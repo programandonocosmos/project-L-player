@@ -1,5 +1,6 @@
 from piece import Piece, piece_color
 import typing
+from sty import bg
 
 Row = typing.List[int]
 Matrix = typing.List[Row]
@@ -40,8 +41,11 @@ class Puzzle:
 
         matrix_repr = [
             piece_color[1] * 7,
-            *[piece_color[1] + line + piece_color[1] for line in matrix_repr],
-            piece_color[1] * 7,
+            *[
+                bg.black + str(i) + "  " + bg.rs + line + piece_color[1]
+                for i, line in enumerate(matrix_repr)
+            ],
+            piece_color[1] + bg.black + " 0  1  2  3  4 " + bg.rs + piece_color[1],
         ]
         matrix_repr_lst = "\n".join(matrix_repr)
 
@@ -54,15 +58,15 @@ class Puzzle:
 
 
 def print_puzzles(puzzles: typing.Sequence[typing.Optional[Puzzle]]) -> None:
-    result = ["", "", "", "", "", "", "", "", "", "", ""]
+    result = ["", "", "", "", "", "", "", "", "", ""]
     for puzzle in puzzles:
         if puzzle is None:
             for i in range(len(result)):
-                result[i] += "|   None   |"
+                result[i] += "   |   None   |   "
         else:
             for i, line in enumerate(str(puzzle).split("\n")):
                 if i <= 2:
-                    result[i] += line + " " * (18 - len(line))
+                    result[i] += line + " " * (25 - len(line))
                 else:
                     result[i] += line + " " * 4
     print("\n".join(result))

@@ -78,7 +78,7 @@ while True:
                         "y_coord": y_coord,
                         "rotation": rotation,
                         "reversed": reversed,
-                    },
+                    }
                 )
             game.step(
                 {
