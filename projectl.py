@@ -115,9 +115,12 @@ class ProjectLGame:
     class InvalidAction(Exception):
         pass
 
-    def __init__(self, player_quantity: int = 2) -> None:
+    def __init__(self, player_quantity: int = 2, state: "ProjectLGame" = None) -> None:
         self.player_quantity = player_quantity
-        self.reset()
+        if state is None:
+            self.reset()
+        else:
+            self.set_state(state)
 
     def reset(self):
         self.piece_quantity = {
@@ -158,6 +161,39 @@ class ProjectLGame:
         self.did_master_action: bool = False
         self.remaining_rounds: typing.Optional[int] = None
         self.points_to_pay: int = 0
+
+    def set_state(self, state: "ProjectLGame") -> None:
+        self.piece_quantity = {
+            piece: piece_quantity
+            for piece, piece_quantity in state.piece_quantity.items()
+        }
+
+        self.black_puzzles = [p if p is None else p.copy() for p in state.black_puzzles]
+        self.white_puzzles = [p if p is None else p.copy() for p in state.white_puzzles]
+        self.black_puzzles_remaining = state.black_puzzles_remaining
+        self.white_puzzles_remaining = state.white_puzzles_remaining
+
+        self.players_pieces = {
+            (player_num, Piece(piece.value)): quantity
+            for (player_num, piece), quantity in state.players_pieces.items()
+        }
+        self.players_points = {
+            player_num: points for player_num, points in state.players_points.items()
+        }
+        self.players_puzzles = {
+            player_num: [puzzle.copy() for puzzle in puzzles]
+            for player_num, puzzles in state.players_puzzles.items()
+        }
+        self.current_player = int(state.current_player)
+        self.remaining_actions = int(state.remaining_actions)
+        self.did_master_action = bool(state.did_master_action)
+        self.remaining_rounds = (
+            None if state.remaining_rounds is None else int(state.remaining_rounds)
+        )
+        self.points_to_pay = int(state.points_to_pay)
+
+    def copy(self) -> "ProjectLGame":
+        return ProjectLGame(self.player_quantity, self)
 
     def extract_state(self) -> VisibleState:
         return {
@@ -374,6 +410,7 @@ class ProjectLGame:
 
             elif action["action"] == ActionEnum.STOP.value:
                 self.players_points[self.current_player] -= self.points_to_pay
+                self.points_to_pay = 0
                 self.remaining_actions = 0
 
         else:
