@@ -12,11 +12,43 @@ import typing
 import itertools
 
 
-def compute_get_dot(
-    game: ProjectLGame,
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+def build_action_for_get_dot() -> ActionData:
+    return {"action": ActionEnum.GET_DOT.value, "action_data": {}}
 
-    action_data = {"action": ActionEnum.GET_DOT.value, "action_data": {}}
+
+def build_action_for_take_puzzle(which_puzzle: int) -> ActionData:
+    return {
+        "action": ActionEnum.TAKE_PUZZLE.value,
+        "action_data": {"which_puzzle": which_puzzle},
+    }
+
+
+def build_action_for_upgrade_piece(from_piece: Piece, to_piece: Piece) -> ActionData:
+    return {
+        "action": ActionEnum.UPGRADE_PIECE.value,
+        "action_data": {"from_piece": from_piece.value, "to_piece": to_piece.value},
+    }
+
+
+def build_action_for_place_piece(
+    puzzle: int, piece: Piece, x: int, y: int, rotation: Rotation, reversed: bool
+) -> ActionData:
+    return {
+        "action": ActionEnum.PLACE_PIECE.value,
+        "action_data": {
+            "puzzle": puzzle,
+            "piece": piece.value,
+            "x_coord": x,
+            "y_coord": y,
+            "rotation": rotation.value,
+            "reversed": reversed,
+        },
+    }
+
+
+def try_action(
+    game: ProjectLGame, action_data: ActionData
+) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
     fake_game = game.copy()
     try:
         visible_state, __, _ = fake_game.step(action_data)
@@ -25,132 +57,115 @@ def compute_get_dot(
         return []
 
 
-def compute_take_puzzle(
+def compute_all_get_dot(
+    game: ProjectLGame,
+) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+    return try_action(game, build_action_for_get_dot())
+
+
+def compute_all_take_puzzle(
     game: ProjectLGame,
 ) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
 
-    output = []
-
-    for p in range(8):
-        action_data = {
-            "action": ActionEnum.TAKE_PUZZLE.value,
-            "action_data": {"which_puzzle": p},
-        }
-        fake_game = game.copy()
-        try:
-            visible_state, __, _ = fake_game.step(action_data)
-            output.append((action_data, visible_state))
-        except:
-            pass
-
-    return output
+    return [
+        res
+        for i in range(8)
+        for res in try_action(game, build_action_for_take_puzzle(i))
+    ]
 
 
-def compute_upgrade_piece(
+def compute_all_upgrade_piece(
     game: ProjectLGame,
 ) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
 
-    output = []
-
-    for p1 in list(Piece):
-        if game.players_pieces[(game.current_player, p1)] > 0:
-            for p2 in list(Piece):
-                if game.piece_quantity[p2] > 0:
-                    action_data = {
-                        "action": ActionEnum.UPGRADE_PIECE.value,
-                        "action_data": {"from_piece": p1.value, "to_piece": p2.value},
-                    }
-                    fake_game = game.copy()
-                    try:
-                        visible_state, __, _ = fake_game.step(action_data)
-                        output.append((action_data, visible_state))
-                    except:
-                        pass
-
-    return output
+    return [
+        res
+        for p1 in list(Piece)
+        if game.players_pieces[(game.current_player, p1)] > 0
+        for p2 in list(Piece)
+        for res in try_action(game, build_action_for_upgrade_piece(p1, p2))
+    ]
 
 
 def compute_place_piece(
+    game: ProjectLGame, piece: Piece, puzzle_num: int
+) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+
+    if game.players_pieces[(game.current_player, piece)] <= 0:
+        return []
+
+    puzzle = game.players_puzzles[game.current_player][puzzle_num]
+
+    if (
+        len([(x, y) for x in range(5) for y in range(5) if puzzle.matrix[x][y] == 0])
+        < piece_size[piece]
+    ):
+        return []
+
+    return [
+        res
+        for x_coord in range(5)
+        for y_coord in range(5)
+        if puzzle.matrix[x_coord][y_coord] == 0
+        for rot in list(Rotation)
+        for rev in [False, True]
+        for res in try_action(
+            game,
+            build_action_for_place_piece(puzzle_num, piece, x_coord, y_coord, rot, rev),
+        )
+    ]
+
+
+def compute_all_place_piece(
     game: ProjectLGame,
 ) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
 
-    output = []
-
-    for piece in list(Piece):
-        if game.players_pieces[(game.current_player, piece)] > 0:
-            for puzzle_num in range(len(game.players_puzzles[game.current_player])):
-                puzzle = game.players_puzzles[game.current_player][puzzle]
-                if (
-                    len(
-                        [
-                            (x, y)
-                            for x in range(5)
-                            for y in range(5)
-                            if puzzle.matrix[x][y] == 0
-                        ]
-                    )
-                    >= piece_size[piece]
-                ):
-                    for x_coord in range(5):
-                        for y_coord in range(5):
-                            if puzzle.matrix[x_coord][y_coord] == 0:
-                                for rot in list(Rotation):
-                                    for rev in [False, True]:
-                                        action_data = {
-                                            "action": ActionEnum.PLACE_PIECE.value,
-                                            "action_data": {
-                                                "puzzle": puzzle_num,
-                                                "piece": piece.value,
-                                                "x_coord": x_coord,
-                                                "y_coord": y_coord,
-                                                "rotation": rot.value,
-                                                "reversed": rev,
-                                            },
-                                        }
-                                        fake_game = game.copy()
-                                        try:
-                                            visible_state, __, _ = fake_game.step(
-                                                action_data
-                                            )
-                                            output.append((action_data, visible_state))
-                                        except:
-                                            pass
-
-    return output
+    return [
+        res
+        for piece in list(Piece)
+        if game.players_pieces[(game.current_player, piece)] > 0
+        for puzzle_num in range(len(game.players_puzzles[game.current_player]))
+        for res in compute_place_piece(game, piece, puzzle_num)
+    ]
 
 
-def compute_master(
+def compute_all_master(
     game: ProjectLGame,
 ) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
 
-    # UNFINISHED!!
+    if game.did_master_action:
+        return []
 
-    output = []
+    all_pieces = [
+        piece
+        for (player_num, piece), quantity in game.players_pieces.items()
+        if player_num == game.current_player
+        for _ in range(quantity)
+    ]
+    puzzle_quantity = len(game.players_puzzles[game.current_player])
 
-    if not game.did_master_action:
-        all_pieces = [
-            piece
-            for (player_num, piece), quantity in game.players_pieces.items()
-            if player_num == game.current_player
-            for _ in range(quantity)
+    if len(all_pieces) < puzzle_quantity:
+        return []
+
+    raw_result = [
+        [
+            compute_place_piece(game, piece, puzzle_num)
+            for puzzle_num, piece in enumerate(pieces)
         ]
-        puzzle_quantity = len(game.players_puzzles[game.current_player])
-        if len(all_pieces) >= puzzle_quantity:
-            for pieces in set(itertools.permutations(all_pieces, puzzle_quantity)):
-                for puzzle_num, piece in enumerate(pieces):
-                    puzzle = game.players_puzzles[game.current_player][puzzle]
+        for pieces in set(itertools.permutations(all_pieces, puzzle_quantity))
+    ]
 
-    return output
+    return []
 
 
 def compute(game: ProjectLGame) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
 
     output = [
-        *compute_get_dot(game),
-        *compute_take_puzzle(game),
-        *compute_upgrade_piece(game),
-        *compute_place_piece(game),
-        *compute_master(game),
+        *compute_all_get_dot(game),
+        *compute_all_take_puzzle(game),
+        *compute_all_upgrade_piece(game),
+        *compute_all_place_piece(game),
+        *compute_all_master(game),
     ]
 
     return output

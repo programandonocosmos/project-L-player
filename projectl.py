@@ -115,7 +115,9 @@ class ProjectLGame:
     class InvalidAction(Exception):
         pass
 
-    def __init__(self, player_quantity: int = 2, state: "ProjectLGame" = None) -> None:
+    def __init__(
+        self, player_quantity: int = 2, state: typing.Optional["ProjectLGame"] = None
+    ) -> None:
         self.player_quantity = player_quantity
         if state is None:
             self.reset()
