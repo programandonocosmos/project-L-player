@@ -46,6 +46,15 @@ def build_action_for_place_piece(
     }
 
 
+def build_action_for_master(
+    place_piece_actions: typing.List[typing.Dict[str, typing.Any]]
+) -> ActionData:
+    return {
+        "action": ActionEnum.MASTER.value,
+        "action_data": {"place_piece_actions": place_piece_actions},
+    }
+
+
 def try_action(
     game: ProjectLGame, action_data: ActionData
 ) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
@@ -147,15 +156,18 @@ def compute_all_master(
     if len(all_pieces) < puzzle_quantity:
         return []
 
-    raw_result = [
-        [
-            compute_place_piece(game, piece, puzzle_num)
-            for puzzle_num, piece in enumerate(pieces)
-        ]
+    actions = [
+        build_action_for_master(
+            [
+                act["action_data"]
+                for puzzle_num, piece in enumerate(pieces)
+                for act, _ in compute_place_piece(game, piece, puzzle_num)
+            ]
+        )
         for pieces in set(itertools.permutations(all_pieces, puzzle_quantity))
     ]
 
-    return []
+    return [res for action in actions for res in try_action(game, action)]
 
 
 def compute(game: ProjectLGame) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
