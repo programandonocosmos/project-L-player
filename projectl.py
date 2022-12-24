@@ -271,6 +271,9 @@ class ProjectLGame:
         from_piece = action_data.from_piece
         to_piece = action_data.to_piece
 
+        if from_piece == to_piece:
+            raise ProjectLGame.InvalidAction("You cannot upgrade a piece to itself")
+
         if self.players_pieces[(self.current_player, from_piece)] == 0:
             raise ProjectLGame.InvalidAction(
                 "You cannot upgrade a piece that you doesn't have"
@@ -382,6 +385,9 @@ class ProjectLGame:
             raise ProjectLGame.InvalidAction(
                 "Using more pieces then you have for MASTER action"
             )
+
+        if len(self.players_puzzles[self.current_player]) == 0:
+            raise ProjectLGame.InvalidAction("No puzzles for MASTER action")
 
         if len(puzzles) != len(set(puzzles)):
             raise ProjectLGame.InvalidAction("Repeated puzzle for MASTER action")
