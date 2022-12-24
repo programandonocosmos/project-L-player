@@ -7,7 +7,6 @@ from projectl import (
     VisibleState,
     piece_size,
 )
-from pydantic import ValidationError
 import typing
 import itertools
 
@@ -157,14 +156,14 @@ def compute_all_master(
         return []
 
     actions = [
-        build_action_for_master(
-            [
-                act["action_data"]
+        build_action_for_master([action["action_data"] for action in action_per_puzzle])
+        for pieces in set(itertools.permutations(all_pieces, puzzle_quantity))
+        for action_per_puzzle in itertools.product(
+            *[
+                [act for act, _ in compute_place_piece(game, piece, puzzle_num)]
                 for puzzle_num, piece in enumerate(pieces)
-                for act, _ in compute_place_piece(game, piece, puzzle_num)
             ]
         )
-        for pieces in set(itertools.permutations(all_pieces, puzzle_quantity))
     ]
 
     return [res for action in actions for res in try_action(game, action)]
