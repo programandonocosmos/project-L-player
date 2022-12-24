@@ -53,6 +53,9 @@ Points = typing.List[Point]
 OrientationToPoints = typing.Dict[bool, Points]
 RotationAndOrientationToPoints = typing.Dict[Rotation, OrientationToPoints]
 
+reversable_pieces = [Piece.LSHAPE, Piece.LADDER]
+undirectional_pieces = [Piece.DOT, Piece.RED]
+
 piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
     Piece.DOT: {
         Rotation.UP: {False: [(0, 0)], True: [(0, 0)]},
@@ -312,43 +315,43 @@ piece_formats: typing.Dict[Piece, RotationAndOrientationToPoints] = {
         Rotation.LEFT: {
             False: [
                 (0, 0),
+                (0, 1),
                 (-1, 0),
-                (0, -1),
-                (-1, -1),
+                (-1, 1),
             ],
             True: [
                 (0, 0),
+                (0, 1),
                 (-1, 0),
-                (0, -1),
-                (-1, -1),
+                (-1, 1),
             ],
         },
         Rotation.DOWN: {
             False: [
                 (0, 0),
-                (0, -1),
-                (1, 0),
-                (1, -1),
+                (0, 1),
+                (-1, 0),
+                (-1, 1),
             ],
             True: [
                 (0, 0),
-                (0, -1),
-                (1, 0),
-                (1, -1),
+                (0, 1),
+                (-1, 0),
+                (-1, 1),
             ],
         },
         Rotation.RIGHT: {
             False: [
                 (0, 0),
-                (1, 0),
                 (0, 1),
-                (1, 1),
+                (-1, 0),
+                (-1, 1),
             ],
             True: [
                 (0, 0),
-                (1, 0),
                 (0, 1),
-                (1, 1),
+                (-1, 0),
+                (-1, 1),
             ],
         },
     },

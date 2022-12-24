@@ -7,6 +7,7 @@ from projectl import (
     VisibleState,
     piece_size,
 )
+from piece import undirectional_pieces, reversable_pieces
 import typing
 import itertools
 
@@ -115,8 +116,8 @@ def compute_place_piece(
         for x_coord in range(5)
         for y_coord in range(5)
         if puzzle.matrix[x_coord][y_coord] == 0
-        for rot in list(Rotation)
-        for rev in [False, True]
+        for rot in ([Rotation.UP] if piece in undirectional_pieces else list(Rotation))
+        for rev in ([False] if piece not in reversable_pieces else [False, True])
         for res in try_action(
             game,
             build_action_for_place_piece(puzzle_num, piece, x_coord, y_coord, rot, rev),
