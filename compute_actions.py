@@ -6,6 +6,7 @@ from projectl import (
     ActionData,
     VisibleState,
     piece_size,
+    Puzzle,
 )
 from piece import undirectional_pieces, reversable_pieces
 import typing
@@ -55,13 +56,50 @@ def build_action_for_master(
     }
 
 
+def get_empty_position(
+    game: ProjectLGame,
+    action: ActionData,
+    puzzles: typing.List[typing.Optional[Puzzle]],
+) -> typing.List[int]:
+    return (
+        []
+        if game.remaining_rounds != 1
+        else (
+            [i for i, puzzle in enumerate(puzzles) if puzzle is None]
+            + (
+                []
+                if action["action"] != ActionEnum.TAKE_PUZZLE
+                else [action["action_data"]["which_puzzle"]]
+            )
+        )
+    )
+
+
 def try_action(
     game: ProjectLGame, action_data: ActionData
 ) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
     fake_game = game.copy()
+    empty_white_positions = get_empty_position(
+        fake_game, action_data, fake_game.white_puzzles
+    )
+    empty_black_positions = get_empty_position(
+        fake_game, action_data, fake_game.black_puzzles
+    )
+
     try:
         visible_state, __, _ = fake_game.step(action_data)
-        return [(action_data, visible_state)]
+        modified_visible_state = {
+            **visible_state,
+            "black_puzzles": [
+                None if i in empty_black_positions else p
+                for i, p in enumerate(visible_state["black_puzzles"])
+            ],
+            "white_puzzles": [
+                None if i in empty_white_positions else p
+                for i, p in enumerate(visible_state["white_puzzles"])
+            ],
+        }
+        return [(action_data, modified_visible_state)]
     except:
         return []
 
