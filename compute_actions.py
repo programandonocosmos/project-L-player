@@ -91,17 +91,17 @@ def try_action(
     except Exception as e:
         return []
 
-    modified_visible_state = {
-        **visible_state,
-        "black_puzzles": [
-            None if i in empty_black_positions else p
-            for i, p in enumerate(visible_state["black_puzzles"])
-        ],
-        "white_puzzles": [
-            None if i in empty_white_positions else p
-            for i, p in enumerate(visible_state["white_puzzles"])
-        ],
-    }
+    modified_visible_state = visible_state.copy()
+
+    modified_visible_state["black_puzzles"] = [
+        None if i in empty_black_positions else p
+        for i, p in enumerate(visible_state["black_puzzles"])
+    ]
+
+    modified_visible_state["white_puzzles"] = [
+        None if i in empty_white_positions else p
+        for i, p in enumerate(visible_state["white_puzzles"])
+    ]
     return [(action_data, modified_visible_state)]
 
 
