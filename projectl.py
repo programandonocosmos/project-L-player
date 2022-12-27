@@ -13,7 +13,6 @@ class VisibleState(typing.TypedDict):
     white_puzzles: typing.List[typing.Optional[PuzzleData]]
     black_puzzles_remaining: int
     white_puzzles_remaining: int
-    piece_quantity: typing.Dict[int, int]
     players_pieces: typing.Dict[typing.Tuple[int, int], int]
     players_points: typing.Dict[int, int]
     players_puzzles: typing.Dict[int, typing.List[PuzzleData]]
@@ -125,12 +124,6 @@ class ProjectLGame:
             self.set_state(state)
 
     def reset(self):
-        self.piece_quantity = {
-            piece: (
-                15 - self.player_quantity if piece in [Piece.DOT, Piece.GREEN] else 15
-            )
-            for piece in list(Piece)
-        }
 
         shuffled_black_puzzles = black_puzzles.copy()
         random.shuffle(shuffled_black_puzzles)
@@ -165,10 +158,6 @@ class ProjectLGame:
         self.points_to_pay: int = 0
 
     def set_state(self, state: "ProjectLGame") -> None:
-        self.piece_quantity = {
-            piece: piece_quantity
-            for piece, piece_quantity in state.piece_quantity.items()
-        }
 
         self.black_puzzles = [p if p is None else p.copy() for p in state.black_puzzles]
         self.white_puzzles = [p if p is None else p.copy() for p in state.white_puzzles]
@@ -207,7 +196,6 @@ class ProjectLGame:
             ],
             "black_puzzles_remaining": len(self.black_puzzles_remaining),
             "white_puzzles_remaining": len(self.white_puzzles_remaining),
-            "piece_quantity": {p.value: q for p, q in self.piece_quantity.items()},
             "players_pieces": {
                 (pl, pi.value): q for (pl, pi), q in self.players_pieces.items()
             },
@@ -224,13 +212,11 @@ class ProjectLGame:
         }
 
     def remove_done_puzzles(self) -> None:
-        puzzles_to_remove = []
+        puzzles_to_remove: typing.List[int] = []
         for i, puzzle in enumerate(self.players_puzzles[self.current_player]):
             if all(v != 0 for row in puzzle.matrix for v in row):
                 self.players_points[self.current_player] += puzzle.points
-                if self.piece_quantity[puzzle.reward] > 0:
-                    self.piece_quantity[puzzle.reward] -= 1
-                    self.players_pieces[(self.current_player, puzzle.reward)] += 1
+                self.players_pieces[(self.current_player, puzzle.reward)] += 1
                 all_positions = [v for row in puzzle.matrix for v in row]
                 for piece in list(Piece):
                     piece_quantity_f = (
@@ -245,8 +231,8 @@ class ProjectLGame:
                 puzzles_to_remove.append(i)
         self.players_puzzles[self.current_player] = [
             p
-            for p in self.players_puzzles[self.current_player]
-            if p not in puzzles_to_remove
+            for i, p in enumerate(self.players_puzzles[self.current_player])
+            if i not in puzzles_to_remove
         ]
 
     def fill_table_with_puzzles(self) -> None:
@@ -259,11 +245,6 @@ class ProjectLGame:
                 self.white_puzzles[i] = self.white_puzzles_remaining.pop()
 
     def get_dot(self) -> None:
-
-        if self.piece_quantity[Piece.DOT] == 0:
-            raise ProjectLGame.InvalidAction("There are no more DOT pieces")
-
-        self.piece_quantity[Piece.DOT] -= 1
         self.players_pieces[(self.current_player, Piece.DOT)] += 1
 
     def upgrade_piece(self, action_data: UpgradePieceAction) -> None:
@@ -279,11 +260,6 @@ class ProjectLGame:
                 "You cannot upgrade a piece that you doesn't have"
             )
 
-        if self.piece_quantity[to_piece] == 0:
-            raise ProjectLGame.InvalidAction(
-                "You cannot upgrade a piece that are not in the game storage"
-            )
-
         from_piece_size = piece_size[from_piece]
         to_piece_size = piece_size[to_piece]
 
@@ -294,8 +270,6 @@ class ProjectLGame:
 
         self.players_pieces[(self.current_player, from_piece)] -= 1
         self.players_pieces[(self.current_player, to_piece)] += 1
-        self.piece_quantity[from_piece] += 1
-        self.piece_quantity[to_piece] -= 1
 
     def get_puzzle(self, action_data: TakeAction) -> None:
 
