@@ -11,14 +11,16 @@ async def handler(websocket: server.WebSocketServerProtocol):
     game = ProjectLGame(2)
     while True:
         await websocket.send(json_of_game_state(game.extract_state()))
-        (random_action, _) = random.choice(compute(game))
+        possible_actions = compute(game)
+        if len(possible_actions) == 0:
+            return
+        (random_action, _) = random.choice(possible_actions)
         game.step(random_action)
 
 
 async def main():
     async with server.serve(handler, "localhost", 8765):
         print("started server on ws://localhost:8765")
-        print("creating game...")
         await asyncio.Future()  # run forever
 
 
