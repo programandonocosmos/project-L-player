@@ -172,8 +172,8 @@ class ProjectLGame:
 
         self.black_puzzles = [p if p is None else p.copy() for p in state.black_puzzles]
         self.white_puzzles = [p if p is None else p.copy() for p in state.white_puzzles]
-        self.black_puzzles_remaining = state.black_puzzles_remaining
-        self.white_puzzles_remaining = state.white_puzzles_remaining
+        self.black_puzzles_remaining = state.black_puzzles_remaining.copy()
+        self.white_puzzles_remaining = state.white_puzzles_remaining.copy()
 
         self.players_pieces = {
             (player_num, Piece(piece.value)): quantity
@@ -250,12 +250,12 @@ class ProjectLGame:
         ]
 
     def fill_table_with_puzzles(self) -> None:
-        for i, puzzle in enumerate(self.black_puzzles):
-            if puzzle is None and len(self.black_puzzles_remaining) > 0:
+        for i in range(len(self.black_puzzles)):
+            if self.black_puzzles[i] is None and len(self.black_puzzles_remaining) > 0:
                 self.black_puzzles[i] = self.black_puzzles_remaining.pop()
 
-        for i, puzzle in enumerate(self.white_puzzles):
-            if puzzle is None and len(self.white_puzzles_remaining) > 0:
+        for i in range(len(self.white_puzzles)):
+            if self.white_puzzles[i] is None and len(self.white_puzzles_remaining) > 0:
                 self.white_puzzles[i] = self.white_puzzles_remaining.pop()
 
     def get_dot(self) -> None:

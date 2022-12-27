@@ -88,20 +88,21 @@ def try_action(
 
     try:
         visible_state, __, _ = fake_game.step(action_data)
-        modified_visible_state = {
-            **visible_state,
-            "black_puzzles": [
-                None if i in empty_black_positions else p
-                for i, p in enumerate(visible_state["black_puzzles"])
-            ],
-            "white_puzzles": [
-                None if i in empty_white_positions else p
-                for i, p in enumerate(visible_state["white_puzzles"])
-            ],
-        }
-        return [(action_data, modified_visible_state)]
-    except:
+    except Exception as e:
         return []
+
+    modified_visible_state = {
+        **visible_state,
+        "black_puzzles": [
+            None if i in empty_black_positions else p
+            for i, p in enumerate(visible_state["black_puzzles"])
+        ],
+        "white_puzzles": [
+            None if i in empty_white_positions else p
+            for i, p in enumerate(visible_state["white_puzzles"])
+        ],
+    }
+    return [(action_data, modified_visible_state)]
 
 
 def compute_all_get_dot(
