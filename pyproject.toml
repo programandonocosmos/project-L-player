@@ -7,12 +7,14 @@ readme = "README.md"
 packages = [{include = "project_l_player"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-torch = "~1.12.1"
+python = "^3.11.1"
+torch = "*"
 tqdm = "^4.64.1"
 matplotlib = "^3.6.2"
 mypy = "^0.991"
 pydantic = "^1.10.2"
+sty = "^1.0.4"
+websockets = "^10.4"
 
 
 [tool.poetry.group.dev.dependencies]
