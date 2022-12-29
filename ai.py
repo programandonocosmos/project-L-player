@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import typing
 import os
+import time
 
 STATE_VEC_LEN = 459
 
@@ -107,8 +108,10 @@ def brain_is_dummy(brain: nn.Sequential, render=False) -> bool:
 
 
 def save_brain(brain: nn.Sequential) -> None:
-    model_quantity = len(os.listdir("models"))
-    torch.save(brain, f"models/brain_{model_quantity}.pkl")
+    last_name = max(int(file[6:-4]) for file in os.listdir("models") if file)
+    next_name = last_name + 1
+    print(f"models/brain_{next_name}.pkl")
+    torch.save(brain, f"models/brain_{next_name}.pkl")
 
 
 def get_not_dummy_brain() -> nn.Sequential:
@@ -134,4 +137,4 @@ def load_brain(number: int) -> nn.Sequential:
     return torch.load(f"models/brain_{number}.pkl")
 
 
-get_and_save_not_dummy_brains(94)
+get_and_save_not_dummy_brains(1000)
