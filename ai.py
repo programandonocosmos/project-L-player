@@ -1,9 +1,10 @@
-from compute_actions import compute
+from compute_actions import compute, MemoizationStruct
 from projectl import ProjectLGame, PuzzleData, VisibleState, ActionData
 import torch
 import torch.nn as nn
 import typing
 import os
+import random
 import time
 
 STATE_VEC_LEN = 459
@@ -43,9 +44,9 @@ def state_to_vec(state: VisibleState) -> typing.List[int]:
 
 
 def choose_action(
-    brain: nn.Sequential, game: ProjectLGame
+    brain: nn.Sequential, game: ProjectLGame, mem: MemoizationStruct
 ) -> typing.Optional[ActionData]:
-    all_options = compute(game)
+    all_options = compute(game, mem)
 
     if len(all_options) == 0:
         return None
@@ -76,11 +77,12 @@ def get_random_brain(state_vec_len: int) -> nn.Sequential:
 
 
 def compare_brains(
-    brain_1: nn.Sequential, brain_2: nn.Sequential, render=False, round_limit=1000
+    brain_1: nn.Sequential, brain_2: nn.Sequential, render=False, round_limit=500
 ) -> typing.Tuple[int, int]:
 
     brains = [brain_1, brain_2]
     game = ProjectLGame()
+    mem = MemoizationStruct(puzzle_and_piece_memory={}, master_action_memory={})
 
     for round in range(round_limit):
         if render:
@@ -89,7 +91,7 @@ def compare_brains(
                 f"======================================================= ROUND {round} ======================================================="
             )
         current_brain = brains[game.current_player]
-        action = choose_action(current_brain, game)
+        action = choose_action(current_brain, game, mem)
         if action is None:
             break
         game.step(action)
@@ -107,11 +109,12 @@ def brain_is_dummy(brain: nn.Sequential, render=False) -> bool:
     return a == 0 and b == 0
 
 
-def save_brain(brain: nn.Sequential) -> None:
-    last_name = max(int(file[6:-4]) for file in os.listdir("models") if file)
+def save_brain(brain: nn.Sequential, folder: str = ".") -> None:
+    last_name = max(
+        int(file[6:-4]) for file in os.listdir(f"models/{folder}") if "brain" in file
+    )
     next_name = last_name + 1
-    print(f"models/brain_{next_name}.pkl")
-    torch.save(brain, f"models/brain_{next_name}.pkl")
+    torch.save(brain, f"models/{folder}/brain_{next_name}.pkl")
 
 
 def get_not_dummy_brain() -> nn.Sequential:
@@ -133,8 +136,62 @@ def get_and_save_not_dummy_brains(quantity: int) -> typing.List[nn.Sequential]:
     return brains
 
 
-def load_brain(number: int) -> nn.Sequential:
-    return torch.load(f"models/brain_{number}.pkl")
+def load_brain(number: int, folder: str = ".") -> nn.Sequential:
+    return torch.load(f"models/{folder}/brain_{number}.pkl")
 
 
-get_and_save_not_dummy_brains(1000)
+def load_all_brains(folder: str = ".") -> typing.Dict[int, nn.Sequential]:
+    all_brains = [
+        int(file[6:-4]) for file in os.listdir(f"models/{folder}") if "brain" in file
+    ]
+    return {
+        brain_number: load_brain(brain_number, folder=folder)
+        for brain_number in all_brains
+    }
+
+
+def select_half(
+    population: typing.Dict[int, nn.Sequential], render: bool = False
+) -> typing.Tuple[typing.List[int], int]:
+
+    if len(population) <= 1:
+        raise Exception(f"Invalid population size ({len(population)})")
+
+    pop_size = len(population)
+    selected_population: typing.List[int] = []
+    unselected_population = list(population.keys())
+    necessary_games = 0
+
+    if render:
+        print(f"Selecting half of a population with {pop_size} entities")
+
+    while len(selected_population) < pop_size / 2 and necessary_games < pop_size:
+
+        first = random.choice(unselected_population)
+        second = random.choice(unselected_population)
+        if first == second:
+            continue
+        necessary_games += 1
+
+        if render:
+            print(f"Starting game number {necessary_games}: {first} vs {second}...")
+            time.sleep(3)
+
+        first_points, second_points = compare_brains(
+            population[first], population[second], render=render
+        )
+        if first_points > second_points:
+            selected_population.append(first)
+            unselected_population.remove(first)
+            unselected_population.remove(second)
+
+        elif first_points < second_points:
+            selected_population.append(second)
+            unselected_population.remove(first)
+            unselected_population.remove(second)
+
+    return selected_population, necessary_games
+
+
+population = load_all_brains("gen0")
+print(select_half(population, render=True))
