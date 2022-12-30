@@ -11,6 +11,29 @@ from projectl import (
 from piece import undirectional_pieces, reversable_pieces
 import typing
 import itertools
+from dataclasses import dataclass, field
+
+Row = typing.Tuple[int, ...]
+Matrix = typing.Tuple[Row, ...]
+Possibility = typing.Tuple[ActionData, VisibleState]
+Possibilities = typing.List[Possibility]
+
+PlacePieceParams = typing.Tuple[int, int, Rotation, bool]
+
+
+@dataclass
+class MemoizationStruct:
+    puzzle_and_piece_memory: typing.Dict[
+        typing.Tuple[Piece, Matrix], typing.List[PlacePieceParams]
+    ]
+    master_action_memory: typing.Dict[
+        typing.Tuple[typing.Tuple[int, ...], typing.Tuple[Matrix, ...]],
+        typing.List[ActionData],
+    ]
+
+    @staticmethod
+    def new() -> "MemoizationStruct":
+        return MemoizationStruct(puzzle_and_piece_memory={}, master_action_memory={})
 
 
 def build_action_for_get_dot() -> ActionData:
@@ -75,9 +98,7 @@ def get_empty_position(
     )
 
 
-def try_action(
-    game: ProjectLGame, action_data: ActionData
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+def try_action(game: ProjectLGame, action_data: ActionData) -> Possibilities:
     fake_game = game.copy()
     empty_white_positions = get_empty_position(
         fake_game, action_data, fake_game.white_puzzles
@@ -105,15 +126,11 @@ def try_action(
     return [(action_data, modified_visible_state)]
 
 
-def compute_all_get_dot(
-    game: ProjectLGame,
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+def compute_all_get_dot(game: ProjectLGame) -> Possibilities:
     return try_action(game, build_action_for_get_dot())
 
 
-def compute_all_take_puzzle(
-    game: ProjectLGame,
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+def compute_all_take_puzzle(game: ProjectLGame) -> Possibilities:
 
     return [
         res
@@ -122,9 +139,7 @@ def compute_all_take_puzzle(
     ]
 
 
-def compute_all_upgrade_piece(
-    game: ProjectLGame,
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+def compute_all_upgrade_piece(game: ProjectLGame) -> Possibilities:
 
     return [
         res
@@ -136,13 +151,25 @@ def compute_all_upgrade_piece(
 
 
 def compute_place_piece(
-    game: ProjectLGame, piece: Piece, puzzle_num: int
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+    game: ProjectLGame, piece: Piece, puzzle_num: int, mem: MemoizationStruct
+) -> Possibilities:
 
     if game.players_pieces[(game.current_player, piece)] <= 0:
         return []
 
     puzzle = game.players_puzzles[game.current_player][puzzle_num]
+
+    parsed_matrix = tuple(tuple(row) for row in puzzle.matrix)
+
+    if mem.puzzle_and_piece_memory.get((piece, parsed_matrix)) is not None:
+        return [
+            res
+            for x, y, rot, rev in mem.puzzle_and_piece_memory[(piece, parsed_matrix)]
+            for res in try_action(
+                game,
+                build_action_for_place_piece(puzzle_num, piece, x, y, rot, rev),
+            )
+        ]
 
     if (
         len([(x, y) for x in range(5) for y in range(5) if puzzle.matrix[x][y] == 0])
@@ -150,7 +177,7 @@ def compute_place_piece(
     ):
         return []
 
-    return [
+    possibilities = [
         res
         for x_coord in range(5)
         for y_coord in range(5)
@@ -162,27 +189,48 @@ def compute_place_piece(
             build_action_for_place_piece(puzzle_num, piece, x_coord, y_coord, rot, rev),
         )
     ]
+    mem.puzzle_and_piece_memory[(piece, parsed_matrix)] = [
+        (
+            p[0]["action_data"]["x_coord"],
+            p[0]["action_data"]["y_coord"],
+            Rotation(p[0]["action_data"]["rotation"]),
+            p[0]["action_data"]["reversed"],
+        )
+        for p in possibilities
+    ]
+    return possibilities
 
 
 def compute_all_place_piece(
-    game: ProjectLGame,
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+    game: ProjectLGame, mem: MemoizationStruct
+) -> Possibilities:
 
     return [
         res
         for piece in list(Piece)
         if game.players_pieces[(game.current_player, piece)] > 0
         for puzzle_num in range(len(game.players_puzzles[game.current_player]))
-        for res in compute_place_piece(game, piece, puzzle_num)
+        for res in compute_place_piece(game, piece, puzzle_num, mem)
     ]
 
 
-def compute_all_master(
-    game: ProjectLGame,
-) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+def compute_all_master(game: ProjectLGame, mem: MemoizationStruct) -> Possibilities:
 
     if game.did_master_action:
         return []
+
+    state = (
+        tuple(
+            game.players_pieces[(game.current_player, piece)] for piece in list(Piece)
+        ),
+        tuple(
+            tuple(tuple(row) for row in p.matrix)
+            for p in game.players_puzzles[game.current_player]
+        ),
+    )
+    if mem.master_action_memory.get(state) is not None:
+        actions = mem.master_action_memory[state]
+        return [res for action in actions for res in try_action(game, action)]
 
     all_pieces = [
         piece
@@ -200,23 +248,25 @@ def compute_all_master(
         for pieces in set(itertools.permutations(all_pieces, puzzle_quantity))
         for action_per_puzzle in itertools.product(
             *[
-                [act for act, _ in compute_place_piece(game, piece, puzzle_num)]
+                [act for act, _ in compute_place_piece(game, piece, puzzle_num, mem)]
                 for puzzle_num, piece in enumerate(pieces)
             ]
         )
     ]
 
+    mem.master_action_memory[state] = actions
+
     return [res for action in actions for res in try_action(game, action)]
 
 
-def compute(game: ProjectLGame) -> typing.List[typing.Tuple[ActionData, VisibleState]]:
+def compute(game: ProjectLGame, mem: MemoizationStruct) -> Possibilities:
 
     output = [
         *compute_all_get_dot(game),
         *compute_all_take_puzzle(game),
         *compute_all_upgrade_piece(game),
-        *compute_all_place_piece(game),
-        *compute_all_master(game),
+        *compute_all_place_piece(game, mem),
+        *compute_all_master(game, mem),
     ]
 
     return output
