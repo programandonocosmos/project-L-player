@@ -11,20 +11,18 @@ from projectl import (
 from piece import undirectional_pieces, reversable_pieces
 import typing
 import itertools
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 Row = typing.Tuple[int, ...]
 Matrix = typing.Tuple[Row, ...]
 Possibility = typing.Tuple[ActionData, VisibleState]
 Possibilities = typing.List[Possibility]
 
-PlacePieceParams = typing.Tuple[int, int, Rotation, bool]
-
 
 @dataclass
 class MemoizationStruct:
     puzzle_and_piece_memory: typing.Dict[
-        typing.Tuple[Piece, Matrix], typing.List[PlacePieceParams]
+        typing.Tuple[Piece, Matrix], typing.List[ActionData]
     ]
     master_action_memory: typing.Dict[
         typing.Tuple[typing.Tuple[int, ...], typing.Tuple[Matrix, ...]],
@@ -162,14 +160,20 @@ def compute_place_piece(
     parsed_matrix = tuple(tuple(row) for row in puzzle.matrix)
 
     if mem.puzzle_and_piece_memory.get((piece, parsed_matrix)) is not None:
-        return [
-            res
-            for x, y, rot, rev in mem.puzzle_and_piece_memory[(piece, parsed_matrix)]
-            for res in try_action(
-                game,
-                build_action_for_place_piece(puzzle_num, piece, x, y, rot, rev),
+        actions = mem.puzzle_and_piece_memory[(piece, parsed_matrix)]
+        parsed_actions = [
+            build_action_for_place_piece(
+                puzzle_num,
+                piece,
+                action["action_data"]["x_coord"],
+                action["action_data"]["y_coord"],
+                Rotation(action["action_data"]["rotation"]),
+                action["action_data"]["reversed"],
             )
+            for action in actions
         ]
+
+        return [res for action in parsed_actions for res in try_action(game, action)]
 
     if (
         len([(x, y) for x in range(5) for y in range(5) if puzzle.matrix[x][y] == 0])
@@ -189,15 +193,7 @@ def compute_place_piece(
             build_action_for_place_piece(puzzle_num, piece, x_coord, y_coord, rot, rev),
         )
     ]
-    mem.puzzle_and_piece_memory[(piece, parsed_matrix)] = [
-        (
-            p[0]["action_data"]["x_coord"],
-            p[0]["action_data"]["y_coord"],
-            Rotation(p[0]["action_data"]["rotation"]),
-            p[0]["action_data"]["reversed"],
-        )
-        for p in possibilities
-    ]
+    mem.puzzle_and_piece_memory[(piece, parsed_matrix)] = [p[0] for p in possibilities]
     return possibilities
 
 
