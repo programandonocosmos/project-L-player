@@ -2,7 +2,7 @@ from functools import reduce
 import json
 from typing import Dict, Tuple, TypeVar, cast
 
-from projectl import VisibleState
+from projectl_old import VisibleState
 
 T = TypeVar("T")
 

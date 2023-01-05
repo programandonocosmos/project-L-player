@@ -1,4 +1,4 @@
-from projectl import (
+from projectl_old import (
     ProjectLGame,
     ActionEnum,
     Piece,
@@ -8,6 +8,7 @@ from projectl import (
     piece_size,
     Puzzle,
 )
+from copy import deepcopy
 from piece import undirectional_pieces, reversable_pieces
 import typing
 import itertools

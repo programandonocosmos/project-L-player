@@ -1,13 +1,15 @@
 from compute_actions import compute, MemoizationStruct
-from projectl import ProjectLGame
+from projectl_old import ProjectLGame
 import random
 import time
 import matplotlib.pyplot as plt
 import statistics
 
+random.seed(100)
+
 
 def run_game() -> None:
-    game = ProjectLGame()
+    game = ProjectLGame(seed=100)
     mem = MemoizationStruct.new()
     running = True
     while running:

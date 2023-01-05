@@ -4,7 +4,7 @@ from compute_actions import compute, MemoizationStruct
 import random
 from game_adapter import json_of_game_state
 
-from projectl import ProjectLGame
+from projectl_old import ProjectLGame
 
 
 async def handler(websocket: server.WebSocketServerProtocol):

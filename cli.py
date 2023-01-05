@@ -1,4 +1,4 @@
-from projectl import ProjectLGame, ActionEnum, Piece, Rotation
+from projectl_old import ProjectLGame, ActionEnum, Piece, Rotation
 from pydantic import ValidationError
 
 game = ProjectLGame(2)
